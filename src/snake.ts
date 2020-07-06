@@ -6,61 +6,62 @@ type Point = {
 }
 
 type State = {
+  rows: number
+  cols: number
   body: Point[]
-  food: Point
   direction: Point
   speed: number
 }
 
-export const ROWS = 20
-export const COLS = 30
+const NORTH: Point = { x: 0, y: -1 }
+const SOUTH: Point = { x: 0, y: 1 }
+const EAST: Point = { x: 1, y: 0 }
+const WEST: Point = { x: -1, y: 0 }
 
-export const UP: Point = { x: 0, y: -1 }
-export const DOWN: Point = { x: 0, y: 1 }
-export const RIGHT: Point = { x: 1, y: 0 }
-export const LEFT: Point = { x: -1, y: 0 }
+const nextHead = ({ body: [head], direction, rows, cols }: State): Point => ({
+  x: R.mathMod(cols)(head.x + direction.x),
+  y: R.mathMod(rows)(head.y + direction.y),
+})
 
-// const pointEq = (p1: Point) => (p2: Point) => p1.x == p2.x && p1.y == p2.y
+const nextBody = (state: State): Point[] => [nextHead(state), ...state.body]
 
-const willEat = (state: State) => R.equals(updateHead(state), state.food)
-const willCrash = (state: State) =>
-  R.find(R.equals(updateHead(state)))(state.body)
-
-const updateHead = (state: State): Point =>
-  state.body.length == 0
-    ? { x: 2, y: 2 }
-    : {
-        x: R.mathMod(COLS)(state.body[0].x + state.direction.x),
-        y: R.mathMod(ROWS)(state.body[0].y + state.direction.y),
-      }
-
-const updateBody = (state: State): State => {
-  return state
-}
-
-const updateFood = (state: State): State => {
-  return state
-}
-
-const updateSpeed = (state: State): State => {
-  return state
-}
+const nextSpeed = ({ speed }: State): number => speed
 
 export const initialState: State = {
-  body: [
-    { x: 20, y: 20 },
-    { x: 20, y: 21 },
-    { x: 20, y: 22 },
-    { x: 20, y: 23 },
-  ],
-  food: { x: 30, y: 30 },
-  direction: RIGHT,
+  rows: 20,
+  cols: 30,
+  body: [{ x: 10, y: 10 }],
+  direction: EAST,
   speed: 30,
 }
 
-const update = R.applySpec({
-  body: updateBody,
-  food: updateFood,
+export const next = R.applySpec({
+  rows: R.prop("rows"),
+  cols: R.prop("cols"),
   direction: R.prop("direction"),
-  speed: updateSpeed,
+  body: nextBody,
+  speed: nextSpeed,
+})
+
+const invert = (p: Point): Point => ({ x: p.y, y: p.x })
+
+const multiply = (n: number) => (p: Point): Point => ({
+  x: p.x * n,
+  y: p.y * n,
+})
+
+export const changeDir = (state: State, move: "LEFT" | "RIGHT"): State => ({
+  ...state,
+  direction: R.pipe(
+    invert,
+    multiply(
+      R.equals(state.direction, NORTH)
+        ? move === "RIGHT"
+          ? -1
+          : 1
+        : move === "RIGHT"
+        ? 1
+        : -1
+    )
+  )(state.direction),
 })
